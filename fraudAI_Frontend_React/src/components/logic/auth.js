@@ -3,7 +3,7 @@ import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 
 // Load the mapped transactions JSON
-import mappedTransactions from "./mapped_transactions.json" // Ensure this path is correct
+import mappedTransactions from "./mapped_transactions.json"; // Ensure this path is correct
 
 // Helper function to generate unique UPI ID
 const generateUPIId = (name) => {
@@ -25,15 +25,17 @@ export const handleGoogleSignIn = async () => {
   try {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-
     if (user) {
+      // Set initial login timestamp
+      localStorage.setItem("loginTimestamp", new Date().getTime().toString());
+      
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
         // First-time user
         const upiId = generateUPIId(user.displayName || "user");
-        
+
         // Get a random transaction from the mapped transactions
         const { user_friendly, model_processed } = getRandomTransaction();
 
@@ -44,8 +46,8 @@ export const handleGoogleSignIn = async () => {
           photoURL: user.photoURL,
           upiId: upiId,
           createdAt: serverTimestamp(),
-          transactionDetails: user_friendly,       // Save user-friendly transaction details
-          modelData: model_processed               // Save model-processed transaction details
+          transactionDetails: user_friendly, // Save user-friendly transaction details
+          modelData: model_processed, // Save model-processed transaction details
         });
 
         console.log("New user created with UPI ID:", upiId);
