@@ -76,9 +76,9 @@ export default function Complaint() {
         const updatedModelData = {
           ...modelData,
           "Geo-Location Flags_normal": (modelData["Geo-Location Flags_normal"] || 0) - 0.02,
-          "Geo-Location Flags_unusual": (modelData["Geo-Location Flags_unusual"] || 0) - 0.02,
+          "Geo-Location Flags_unusual": (modelData["Geo-Location Flags_unusual"] || 0) - 0.2,
           "Recent High-Value Transaction Flags": (modelData["Recent High-Value Transaction Flags"] || 0) + 0.02,
-          "Recipient Blacklist Status": (modelData["Recipient Blacklist Status"] || 0) + 0.02,
+          "Recipient Blacklist Status": (modelData["Recipient Blacklist Status"] || 0) + 0.12,
           "Normalized Transaction Amount": (modelData["Normalized Transaction Amount"] || 0) - 0.01,
           "Social Trust Score": (modelData["Social Trust Score"] || 0) - 0.1,
           "Account Age": (modelData["Account Age"] || 0) +  0.1,

@@ -12,23 +12,22 @@ import { UserProvider } from "./context/user/index.jsx";
 import SignIn from "./components/logic/SignIn";
 import Statement from "./components/logic/statement";
 
-import ComplaintsHistory from './components/logic/complaintView';
+import ComplaintsHistory from "./components/logic/complaintView";
 const RouteTitleUpdater = () => {
   const location = useLocation();
 
   useEffect(() => {
     const routeToTitle = {
-      "/": "SafePayAI - Home",
-      "/dashboard": "SafePayAI - Dashboard",
-      "/send-money": "SafePayAI - Send Money",
-      "/transactions": "SafePayAI - Transactions",
-      "/statements": "SafePayAI - Statements",
-      "/beneficiaries": "SafePayAI - Beneficiaries",
-      "/settings": "SafePayAI - Settings",
-      "/help-support": "SafePayAI - Help & Support",
+      "/": "SafeUPI - Dashboard",
+      "/dashboard": "SafeUPI - Dashboard",
+      "/send-money": "SafeUPI - Send Money",
+      "/transactions": "SafeUPI - Transactions",
+      "/statements": "SafeUPI - Statements",
+      "/complaints-history": "SafeUPI - Complaints History",
+      "/complaint": "SafeUPI - Complaint",
     };
 
-    const title = routeToTitle[location.pathname] || "SafePayAI";
+    const title = routeToTitle[location.pathname] || "SafeUPI";
     document.title = title;
   }, [location]);
 
@@ -58,16 +57,14 @@ const App = () => {
             path="/statements"
             element={<RouteGuard element={<Statement />} />}
           />
-          <Route path="/beneficiaries" element={<Homepage />} />
-          <Route
-            path="/help-support"
-            element={<RouteGuard element={<Homepage />} />}
-          />
           <Route
             path="/complaint"
             element={<RouteGuard element={<Complaint />} />}
           />
-          <Route path="/help-support" element={<RouteGuard element={<ComplaintsHistory />} />} />
+          <Route
+            path="/complaints-history"
+            element={<RouteGuard element={<ComplaintsHistory />} />}
+          />
           <Route path="/auth" element={<RouteGuard element={<SignIn />} />} />
         </Routes>
       </Router>

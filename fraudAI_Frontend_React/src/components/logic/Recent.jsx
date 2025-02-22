@@ -34,6 +34,7 @@ const RecentTransactions = () => {
               ? userDoc.data() 
               : prevUser;
           });
+          console.log(user);
         } else {
           console.error("User document does not exist");
         }
@@ -44,29 +45,38 @@ const RecentTransactions = () => {
 
     const fetchTransactions = async () => {
       if (!user) return // Ensure user is defined
-
-      const transactionsCollection = collection(db, "transactions")
-      
+    
+      const transactionsCollection = collection(db, "transactions");
+    
       // Queries for both sent and received transactions
-      const sentQuery = query(transactionsCollection, where("senderUPI", "==", user.upiId))
-      const receivedQuery = query(transactionsCollection, where("recipientUPI", "==", user.upiId))
-      
-      const [sentSnapshot, receivedSnapshot] = await Promise.all([getDocs(sentQuery), getDocs(receivedQuery)])
-      
+      const sentQuery = query(transactionsCollection, where("senderUPI", "==", user.upiId));
+      const receivedQuery = query(transactionsCollection, where("recipientUPI", "==", user.upiId));
+    
+      const [sentSnapshot, receivedSnapshot] = await Promise.all([
+        getDocs(sentQuery),
+        getDocs(receivedQuery)
+      ]);
+    
       const sentTransactions = sentSnapshot.docs.map(doc => ({
         id: doc.id,
         type: "sent",
         ...doc.data()
-      }))
-      
+      }));
+    
       const receivedTransactions = receivedSnapshot.docs.map(doc => ({
         id: doc.id,
         type: "received",
         ...doc.data()
-      }))
-      
-      setTransactions([...sentTransactions, ...receivedTransactions])
-    }
+      }));
+    
+      // Combine and sort transactions by timestamp (latest first)
+      const allTransactions = [...sentTransactions, ...receivedTransactions].sort(
+        (a, b) => b.createdAt.seconds - a.createdAt.seconds
+      );
+    
+      setTransactions(allTransactions);
+    };
+    
 
     fetchUserData().then(fetchTransactions) // Fetch user data and then transactions
   }, [user]) // Dependency on user
@@ -117,8 +127,8 @@ const RecentTransactions = () => {
             <CardContent>
               <div className="space-y-4 ">
                 {filteredTransactions.map((transaction) => (
-                  <div key={transaction.id} className="rounded-lg   transition-colors duration-200 flex group" >
-                  <Card  className="bg-gray-700 border-gray-600 hover:bg-gray-600  transition-colors duration-200 flex justify-between w-full peer">
+                  <div key={transaction.id} className="rounded-lg   transition-colors duration-200 flex group " >
+                  <Card  className="bg-gray-700 border-gray-600 hover:bg-gray-600   flex justify-between w-full peer transition-all duration-600 ease-in-out  hover:scale-105">
                     <CardContent className="flex items-center justify-between p-4  w-full ">
                       <div className="flex items-center space-x-4  ">
                         <div className={`p-2 rounded-full ${transaction.type === 'received' ? 'bg-green-500' : 'bg-red-500'}`}>
@@ -150,7 +160,7 @@ const RecentTransactions = () => {
                     </CardContent>
                   </Card>
 
-                  {transaction.type !== 'received' && <Card  className="bg-blue-600 h-3/4 mt-4 ml-3 hover:bg-blue-800  hover:cursor-pointer hidden  content-center  justify-between peer-hover:block group-hover:block " 
+                  {transaction.type !== 'received' && <Card  className="bg-blue-600  mt-4 ml-3 hover:bg-blue-800 h-0 w-0 group-hover:h-3/4 group-hover:w-[20%] hover:cursor-pointer hidden  content-center  justify-between peer-hover:block group-hover:block transition-all duration-600 ease-in-out  hover:scale-105 " 
                   onClick={() => navigate(`/complaint?receiverID=${transaction.recipientUPI}`)}
                   >
 

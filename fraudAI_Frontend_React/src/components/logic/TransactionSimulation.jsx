@@ -2,36 +2,80 @@ import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, XCircle, Loader2, ArrowRight, X } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, runTransaction, addDoc, serverTimestamp } from "firebase/firestore";
+
 import { db } from './firebase';
 const TransactionSimulation = ({ upiId, amount, remarks, senderUPI, onClose }) => {
   const [currentStep, setCurrentStep] = useState('details')
   const [isLoading, setIsLoading] = useState(false)
 
+
+
+  const findUserByUPI = async (upiId) => {
+    const usersCollection = collection(db, "users");
+    const q = query(usersCollection, where("upiId", "==", upiId));
+    const querySnapshot = await getDocs(q);
+  
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].id; // Return the user's UID (document ID)
+    }
+    return null; // No user found
+  };
+  
   const handleConfirm = async () => {
     setIsLoading(true);
     setCurrentStep("processing");
-    try {
-      // Simulate transaction delay
-      await new Promise(resolve => setTimeout(resolve, 3000));
   
-      // Save to Firebase
-      await addDoc(collection(db, "transactions"), {
-        amount: Number(amount),
-        recipientUPI: upiId,
-        senderUPI: senderUPI,
-        remarks: remarks,
-        createdAt: serverTimestamp(),
+    try {
+      // Find the sender and recipient UIDs by their UPI IDs
+      const senderUID = await findUserByUPI(senderUPI);
+      const recipientUID = await findUserByUPI(upiId);
+  
+      if (!senderUID) throw new Error("Sender does not exist");
+      if (!recipientUID) throw new Error("Recipient does not exist");
+  
+      // Reference sender and recipient docs
+      const senderRef = doc(db, "users", senderUID);
+      const recipientRef = doc(db, "users", recipientUID);
+  
+      console.log("Sender UID:", senderUID, "Recipient UID:", recipientUID);
+  
+      // Run transaction to ensure atomicity
+      await runTransaction(db, async (transaction) => {
+        const senderDoc = await transaction.get(senderRef);
+        const recipientDoc = await transaction.get(recipientRef);
+  
+        if (!senderDoc.exists()) throw new Error("Sender does not exist");
+        if (!recipientDoc.exists()) throw new Error("Recipient does not exist");
+  
+        const senderData = senderDoc.data();
+        if (senderData.balance < amount) throw new Error("Insufficient balance");
+  
+        // Update balances
+        transaction.update(senderRef, { balance: Number(senderData.balance) - Number(amount) });
+        transaction.update(recipientRef, { balance: Number(recipientDoc.data().balance) + Number(amount) });
+
+  
+        // Add transaction record
+        await addDoc(collection(db, "transactions"), {
+          amount: Number(amount),
+          recipientUPI: upiId,
+          senderUPI: senderUPI,
+          remarks: remarks,
+          createdAt: serverTimestamp(),
+        });
       });
   
       setCurrentStep("success");
     } catch (error) {
-      console.error("Error processing transaction:", error);
+      console.error("Transaction error:", error);
       setCurrentStep("error");
     } finally {
       setIsLoading(false);
     }
   };
+  
+
 
   const containerVariants = {
     hidden: { opacity: 0 },
