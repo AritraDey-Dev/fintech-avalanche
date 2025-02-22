@@ -65,7 +65,7 @@ const Dashboard = () => {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setUpiId(userDoc.data().upiId);
-          setBalance(userDoc.data().balance)
+          setBalance(userDoc.data().balance);
         }
       } else {
         setUser(null);
@@ -76,8 +76,6 @@ const Dashboard = () => {
 
     return () => unsubscribe(); // Cleanup listener on unmount
   }, []);
-
-
 
   const TransactionChart = () => (
     <ResponsiveContainer width="100%" height={300}>
