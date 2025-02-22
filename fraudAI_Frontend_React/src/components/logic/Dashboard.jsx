@@ -55,12 +55,17 @@ const Dashboard = () => {
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
           setUpiId(userDoc.data().upiId);
-          setBalance(Math.floor(Math.random() * 10000));
+          setBalance(userDoc.data().balance)
         }
       }
     };
     checkUser();
+
+    
+
   }, []);
+
+
 
   const TransactionChart = () => (
     <ResponsiveContainer width="100%" height={300}>
@@ -195,7 +200,7 @@ const Dashboard = () => {
             </motion.div>
           ))}
         </div>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <div className="mt-8 grid gap-6 md:grid-cols-2">b
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-blue-400">Transaction History</CardTitle>

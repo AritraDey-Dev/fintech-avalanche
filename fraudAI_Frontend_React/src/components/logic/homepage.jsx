@@ -27,7 +27,7 @@ import {
     export default function Homepage() {
         const [showPopup, setShowPopup] = useState(false); // State for managing the pop-up visibility
         const [transactionData, setTransactionData] = useState([]); 
-        const [remarks,setRemarks]=useState()
+        const [remarks,setRemarks]=useState("other")
         const [showSimulation, setShowSimulation] = useState(false);
     
         const remarkOptions = [
@@ -5059,7 +5059,7 @@ import {
     const [user, setUser] = useState(null);
     const [upiId, setUpiId] = useState("");
     const [recipientUpiId, setRecipientUpiId] = useState('')
-    const [verificationStatus, setVerificationStatus] = useState(null); 
+    const [verificationStatus, setVerificationStatus] = useState("idle"); 
     const [isAlertOpen, setIsAlertOpen] = useState(false)
     
     const [amount, setAmount] = useState(10000); 
@@ -5095,9 +5095,13 @@ import {
         try {
           // Reference the "users" collection
           const usersRef = collection(db, "users");
+          const complaintsRef = collection(db, "complaints");
       
           // Query the collection for a matching UPI ID
           const q = query(usersRef, where("upiId", "==", recipientUpiId));
+          const q2 = query(complaintsRef, where("recipientUpiId", "==", recipientUpiId));
+          const qs = await getDocs(q2);
+          console.log(qs.size ,"hello");
           const querySnapshot = await getDocs(q);
       
           // Check if a matching document was found
@@ -5105,41 +5109,62 @@ import {
             setVerificationStatus("invalid");
             return;
           }
+
+          
       
           // Get the first document from the query results
           const userDoc = querySnapshot.docs[0]; // Assuming UPI ID is unique
           const modelData = userDoc.data().modelData;
+          let model = {
+            q1: modelData["Geo-Location Flags_normal"],
+            q2: modelData["Geo-Location Flags_unusual"],
+            q3: modelData["Recent High-Value Transaction Flags"],
+            q4: modelData["Recipient Blacklist Status"],
+            q5: modelData["Normalized Transaction Amount"],
+            q6: modelData["Social Trust Score"],
+            q7: modelData["Account Age"],
+          }
+
+          if(qs.size >5){
+            model.q1 = 0;
+            model.q2 = 0;
+            model.q3 = 1;
+            model.q4 = 1;
+            model.q5 = 0.6;
+            model.q6 = 0.6;
+            model.q7 = 0.6;            
+          }
       
           // Ensure features are in the correct order
           const features = [
             modelData["Transaction Amount"] || 0,
             modelData["Transaction Frequency"] || 0,
-            modelData["Recipient Blacklist Status"] || 0,
+            model.q4 || 0,
             modelData["Device Fingerprinting"] || 0,
             modelData["VPN or Proxy Usage"] || 0,
             modelData["Behavioral Biometrics"] || 0,
             modelData["Time Since Last Transaction"] || 0,
-            modelData["Social Trust Score"] || 0,
-            modelData["Account Age"] || 0,
+            model.q6 || 0,
+            model.q7 || 0,
             modelData["High-Risk Transaction Times"] || 0,
             modelData["Past Fraudulent Behavior Flags"] || 0,
             modelData["Location-Inconsistent Transactions"] || 0,
-            modelData["Normalized Transaction Amount"] || 0,
+            model.q5 || 0,
             modelData["Transaction Context Anomalies"] || 0,
             modelData["Fraud Complaints Count"] || 0,
             modelData["Merchant Category Mismatch"] || 0,
             modelData["User Daily Limit Exceeded"] || 0,
-            modelData["Recent High-Value Transaction Flags"] || 0,
+            model.q3 || 0,
             modelData["Recipient Verification Status_suspicious"] || 0,
             modelData["Recipient Verification Status_verified"] || 0,
-            modelData["Geo-Location Flags_normal"] || 0,
-            modelData["Geo-Location Flags_unusual"] || 0,
+            model.q1 || 0,
+            model.q2 || 0,
           ];
       
           console.log("Features sent to Flask:", features); // For debugging
       
           // Send the features to the Flask server
-          const response = await fetch("http://127.0.0.1:5000/predict", {
+          const response = await fetch("https://0b05-2401-4900-634a-8866-797f-9669-99af-1302.ngrok-free.app/predict", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -5178,6 +5203,7 @@ import {
             const generatedUPIId = generateUPIId(loggedInUser.displayName || "user");
             const { user_friendly, model_processed } = getRandomTransaction();
             await setDoc(userRef, {
+                balance:10000,
                 uid: loggedInUser.uid,
                 name: loggedInUser.displayName,
                 email: loggedInUser.email,
@@ -5300,7 +5326,7 @@ import {
                               value={recipientUpiId}
                               onChange={(e) => {
                                 setRecipientUpiId(e.target.value);
-                                setVerificationStatus(null);
+                                setVerificationStatus("idle");
                               }}
                               className="flex-grow bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500"
                             />
@@ -5311,16 +5337,16 @@ import {
                               Verify
                             </Button>
                           </div>
-                          <AnimatePresence mode="wait">
-        {verificationStatus !== "idle" && (
+                          <AnimatePresence mode="wait"  >
+        {verificationStatus != "idle" && (
           <motion.div
             key={verificationStatus}
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className={`p-4 rounded-lg ${
+            className={`p-4 rounded-lg border border-red-700  ${
               verificationStatus === "valid"
-                ? "bg-green-100 text-green-800"
+                ? "bg-green-200 text-green-800"
                 : "bg-red-100 text-red-800"
             }`}
           >
@@ -5397,7 +5423,7 @@ import {
                           className="space-y-3"
                         >
                           <Label className="text-white/70">Add Remarks (Optional)</Label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 ">
                             {remarkOptions.map((option, index) => (
                               <motion.div
                                 key={option.value}
