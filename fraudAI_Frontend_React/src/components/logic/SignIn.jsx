@@ -28,7 +28,7 @@ const SignIn = () => {
               />
             </svg>
           </div>
-          <h1 className="text-4xl font-bold mb-2">SafePay AI</h1>
+          <h1 className="text-4xl font-bold mb-2">SafeUPI</h1>
           <p className="text-gray-300 text-lg mb-6">
             Secure Payments, Smarter Decisions
           </p>

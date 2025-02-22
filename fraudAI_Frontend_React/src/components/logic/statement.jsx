@@ -7,7 +7,7 @@ import { useUser } from "@/context/user";
 const bankDetails = {
   bankName: "NPCI",
   period: "March 1, 2024, to March 31, 2024",
-  website: "UPI.Ai",
+  website: "www.SafeUPI.com",
 };
 
 function Statement() {

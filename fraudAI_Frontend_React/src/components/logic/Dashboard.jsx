@@ -3,7 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { auth, db } from "./firebase.js";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import Header from "./Header.jsx";
 import SidebarContent from "./SidebarContent";
 import { handleGoogleSignIn } from "./auth";
@@ -45,8 +52,56 @@ const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
 const Dashboard = () => {
   const { user, upiId, setUser, setUpiId } = useUser();
   const [balance, setBalance] = useState(0);
+  const [transaction, setTransaction] = useState([]);
+  const [monthly, setmonthly] = useState(0);
+  const [transactionData, setTransactionData] = useState([]);
+  const navigate = useNavigate();
+  console.log(transaction);
 
-  
+  const fetchTransactions = async (user, upiId) => {
+    if (!user) return; // Ensure user is defined
+
+    const transactionsCollection = collection(db, "transactions");
+
+    // Queries for both sent and received transactions
+    const sentQuery = query(
+      transactionsCollection,
+      where("senderUPI", "==", upiId)
+    );
+    const receivedQuery = query(
+      transactionsCollection,
+      where("recipientUPI", "==", upiId)
+    );
+
+    const [sentSnapshot, receivedSnapshot] = await Promise.all([
+      getDocs(sentQuery),
+      getDocs(receivedQuery),
+    ]);
+
+    const sentTransactions = sentSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      type: "sent",
+      ...doc.data(),
+    }));
+
+    const receivedTransactions = receivedSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      type: "received",
+      ...doc.data(),
+    }));
+
+    setTransaction([...sentTransactions, ...receivedTransactions]);
+    setmonthly(sentTransactions.reduce((acc, curr) => acc + curr.amount, 0));
+    setTransactionData(
+      sentTransactions.map((item) => ({
+        name: item.createdAt
+          ? new Date(item.createdAt.seconds * 1000).toLocaleDateString("en-IN")
+          : "N/A",
+        value: item.amount,
+      }))
+    );
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -67,6 +122,11 @@ const Dashboard = () => {
     return () => unsubscribe(); // Cleanup listener on unmount
   }, []);
 
+  useEffect(() => {
+    if ((user, upiId)) {
+      fetchTransactions(user, upiId);
+    }
+  }, [user, upiId]);
   const TransactionChart = () => (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={transactionData}>
@@ -169,7 +229,6 @@ const Dashboard = () => {
               <p className="text-sm text-gray-400">UPI ID: {upiId}</p>
             </div>
           </div>
-          
         </motion.div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
@@ -182,13 +241,13 @@ const Dashboard = () => {
             {
               title: "Monthly Spending",
               icon: CreditCard,
-              value: (balance * 0.3).toFixed(2),
+              value: monthly.toFixed(2),
               color: "green",
             },
             {
               title: "Total Transactions",
               icon: Activity,
-              value: transactionData.length,
+              value: transaction.length,
               color: "purple",
             },
             {
@@ -226,7 +285,7 @@ const Dashboard = () => {
           <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
               <CardTitle className="text-lg font-semibold text-blue-400">
-                Transaction History
+                Spending History
               </CardTitle>
             </CardHeader>
             <CardContent>

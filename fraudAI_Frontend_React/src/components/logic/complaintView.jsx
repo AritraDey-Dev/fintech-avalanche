@@ -19,7 +19,10 @@ export default function ComplaintsHistory() {
         }
 
         const complaintsRef = collection(db, "complaints");
-        const q = query(complaintsRef, where("senderEmail", "==", currentUser.email));
+        const q = query(
+          complaintsRef,
+          where("senderEmail", "==", currentUser.email)
+        );
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
@@ -49,7 +52,9 @@ export default function ComplaintsHistory() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white px-4">
       <div className="max-w-4xl w-full bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800 relative">
-        <h2 className="text-3xl font-bold text-indigo-400 text-center mb-6">Your Complaints</h2>
+        <h2 className="text-3xl font-bold text-indigo-400 text-center mb-6">
+          Your Complaints
+        </h2>
 
         {loading ? (
           <div className="flex justify-center py-10">
@@ -72,10 +77,15 @@ export default function ComplaintsHistory() {
               </thead>
               <tbody>
                 {complaints.map((complaint) => (
-                  <tr key={complaint.id} className="border-b border-gray-700 hover:bg-gray-800">
+                  <tr
+                    key={complaint.id}
+                    className="border-b border-gray-700 hover:bg-gray-800"
+                  >
                     <td className="px-4 py-3">{complaint.recipientUpiId}</td>
                     <td className="px-4 py-3">{complaint.complaint}</td>
-                    <td className="px-4 py-3">{new Date(complaint.timestamp.toDate()).toLocaleString()}</td>
+                    <td className="px-4 py-3">
+                      {new Date(complaint.timestamp.toDate()).toLocaleString()}
+                    </td>
                   </tr>
                 ))}
               </tbody>
