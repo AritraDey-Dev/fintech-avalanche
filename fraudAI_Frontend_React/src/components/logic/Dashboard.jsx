@@ -8,7 +8,7 @@ import Header from "./Header.jsx";
 import SidebarContent from "./SidebarContent";
 import { handleGoogleSignIn } from "./auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DollarSign, CreditCard, Activity, Zap } from "lucide-react";
+import { IndianRupee, CreditCard, Activity, Zap } from "lucide-react";
 import { motion } from "framer-motion";
 import {
   Line,
@@ -45,18 +45,8 @@ const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
 const Dashboard = () => {
   const { user, upiId, setUser, setUpiId } = useUser();
   const [balance, setBalance] = useState(0);
-  const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    try {
-      await signOut(auth);
-      setUser(null);
-      setUpiId("");
-      navigate("/auth");
-    } catch (error) {
-      console.error("Sign-Out Error:", error);
-    }
-  };
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
@@ -179,19 +169,13 @@ const Dashboard = () => {
               <p className="text-sm text-gray-400">UPI ID: {upiId}</p>
             </div>
           </div>
-          <Button
-            onClick={handleSignOut}
-            variant="destructive"
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 transition-colors duration-200"
-          >
-            Sign Out
-          </Button>
+          
         </motion.div>
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
           {[
             {
               title: "Total Balance",
-              icon: DollarSign,
+              icon: IndianRupee,
               value: balance.toFixed(2),
               color: "blue",
             },

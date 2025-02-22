@@ -16,6 +16,7 @@ function Statement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [latestBalance, setlatestBalance] = useState(100);
 
   // Fetch user details from the users collection
   useEffect(() => {
@@ -27,6 +28,8 @@ function Statement() {
           if (userDoc.exists()) {
             setUser(userDoc.data());
             setUpiId(userDoc.data().upiId || "");
+            setlatestBalance(userDoc.data().balance);
+            console.log(userDoc.data().balance);
           }
         } catch (err) {
           console.error("Error fetching user:", err);
@@ -75,14 +78,7 @@ function Statement() {
       txn.senderUPI?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const latestBalance =
-    transactions.length > 0 &&
-    transactions[transactions.length - 1]?.balance !== undefined
-      ? transactions[transactions.length - 1].balance.toLocaleString("en-IN", {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 2,
-        })
-      : "0.00";
+
 
   return (
     <div className="min-h-screen p-6 flex items-center justify-center bg-gray-900 text-white">
@@ -120,7 +116,7 @@ function Statement() {
           <div className="flex justify-between items-center">
             <div>
               <p className="text-sm text-gray-400">Current Balance</p>
-              <div className="flex items-center mt-1">
+              <div className ="flex items-center mt-1">
                 <IndianRupee className="w-5 h-5 text-gray-300" />
                 <span className="text-3xl font-bold text-white">
                   {latestBalance}

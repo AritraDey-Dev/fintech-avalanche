@@ -5066,7 +5066,7 @@ export default function Homepage() {
   const [verificationStatus, setVerificationStatus] = useState("idle");
   const [isAlertOpen, setIsAlertOpen] = useState(false);
 
-  const [amount, setAmount] = useState(10000);
+  const [amount, setAmount] = useState(1000);
 
   const handleSeeWhy = async () => {
     try {
@@ -5166,7 +5166,7 @@ export default function Homepage() {
           console.log("Features sent to Flask:", features); // For debugging
       
           // Send the features to the Flask server
-          const response = await fetch("https://0b05-2401-4900-634a-8866-797f-9669-99af-1302.ngrok-free.app/predict", {
+          const response = await fetch("http://54.82.77.95:8000/predict", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -5187,44 +5187,6 @@ export default function Homepage() {
         }
       };
       
-      
-      
-
-    const handleGoogleSignIn = async () => {
-        const provider = new GoogleAuthProvider();
-        try {
-        const result = await signInWithPopup(auth, provider);
-        const loggedInUser = result.user;
-
-        if (loggedInUser) {
-            setUser(loggedInUser);
-            const userRef = doc(db, "users", loggedInUser.uid);
-            const userDoc = await getDoc(userRef);
-
-            if (!userDoc.exists()) {
-            const generatedUPIId = generateUPIId(loggedInUser.displayName || "user");
-            const { user_friendly, model_processed } = getRandomTransaction();
-            await setDoc(userRef, {
-                balance:10000,
-                uid: loggedInUser.uid,
-                name: loggedInUser.displayName,
-                email: loggedInUser.email,
-                photoURL: loggedInUser.photoURL,
-                upiId: generatedUPIId,
-                createdAt: serverTimestamp(),
-                transactionDetails: user_friendly, // Save user-friendly transaction details
-                modelData: model_processed
-            });
-            setUpiId(generatedUPIId);
-            } else {
-            setUpiId(userDoc.data().upiId);
-            }
-        }
-        } catch (error) {
-        console.error("Google Sign-In Error:", error);
-        }
-    };
-
 
 
   useEffect(() => {

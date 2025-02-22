@@ -37,7 +37,7 @@ export const handleGoogleSignIn = async () => {
         const { user_friendly, model_processed } = getRandomTransaction();
 
         await setDoc(userRef, {
-          balance: 100000,
+          balance: 1000000,
           uid: user.uid,
           name: user.displayName,
           email: user.email,

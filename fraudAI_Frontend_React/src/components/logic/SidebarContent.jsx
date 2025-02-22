@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { Button} from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router-dom";
+
 
 import { 
   Home, 
@@ -17,6 +19,9 @@ import {
  PackageX,
   LogOut 
 } from 'lucide-react';
+import { useUser } from '@/context/user';
+import { signOut } from 'firebase/auth';
+import { auth } from './firebase';
 
 export default function SidebarContent() {
   const navItems = [
@@ -27,6 +32,19 @@ export default function SidebarContent() {
     { icon: Help, label: "Help & Support", path: "/help-support" },
     {icon: PackageX, label: "Complain", path: "/complaint"}
   ];
+  const { user, upiId, setUser, setUpiId } = useUser();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+      try {
+        await signOut(auth);
+        setUser(null);
+        setUpiId("");
+        navigate("/auth");
+      } catch (error) {
+        console.error("Sign-Out Error:", error);
+      }
+    };
 
   return (
     <>
@@ -60,13 +78,17 @@ export default function SidebarContent() {
         </nav>
       </div>
       <div className="mt-auto p-6 border-t border-white/10">
-        <Button 
+        
+      <Button 
           variant="ghost" 
-          className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          onClick={handleSignOut}
+          className="w-full justify-center text-red-400 hover:text-red-300 hover:bg-red-500/10 "
         >
           <LogOut className="mr-2 h-4 w-4" />
           Logout
         </Button>
+          
+        
       </div>
     </>
   );
