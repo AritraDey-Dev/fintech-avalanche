@@ -5065,6 +5065,7 @@ export default function Homepage() {
   const [recipientUpiId, setRecipientUpiId] = useState("");
   const [verificationStatus, setVerificationStatus] = useState("idle");
   const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [Qs , setQs] = useState(2);
 
   const [amount, setAmount] = useState(1000);
 
@@ -5107,6 +5108,7 @@ export default function Homepage() {
       );
       const qs = await getDocs(q2);
       console.log(qs.size, "hello");
+      setQs(qs.size);
       const querySnapshot = await getDocs(q);
 
       // Check if a matching document was found
@@ -5168,7 +5170,7 @@ export default function Homepage() {
 
       // Send the features to the Flask server
       const response = await fetch(
-        "http://ec2-54-82-77-95.compute-1.amazonaws.com/predict",
+        "https://fintech-avalanche.onrender.com/predict",
         {
           method: "POST",
           headers: {
@@ -5461,25 +5463,30 @@ export default function Homepage() {
               </div>
               <div className="p-6 max-h-[60vh] overflow-y-auto">
                 {transactionData.length > 0 ? (
-                  <ul className="space-y-4">
-                    {transactionData.map(([key, value], index) => (
-                      <motion.li
-                        key={key}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="bg-gray-50 p-3 rounded-md"
-                      >
-                        <span className="font-semibold text-gray-700">
-                          {key}:
-                        </span>{" "}
-                        <span className="text-gray-600">{value}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-gray-600">No data found</p>
-                )}
+  <ul className="space-y-4">
+    {transactionData.map(([key, value], index) => (
+      <motion.li
+        key={key}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.1 }}
+        className="bg-gray-50 p-3 rounded-md"
+      >
+        <span className="font-semibold text-gray-700">{key}:</span>{" "}
+        <span className="text-gray-600">
+          {key === "Fraud Complaints Count"
+            ? Qs
+            : typeof value === "boolean"
+            ? value ? "True" : "False"
+            : value}
+        </span>
+      </motion.li>
+    ))}
+  </ul>
+) : (
+  <p className="text-gray-600">No data found</p>
+)}
+
               </div>
               <div className="p-4 bg-gray-50 border-t border-gray-200">
                 <Button
