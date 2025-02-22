@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from "react";
-import { AlertCircle, Lock } from "lucide-react";
-import { auth, db } from "./firebase"; // Ensure correct Firebase imports
-import { doc, getDoc, collection, addDoc } from "firebase/firestore";
+import { AlertCircle, Lock, CheckCircle } from "lucide-react";
+import { auth, db } from "./firebase";
+import { 
+  collection, 
+  addDoc, 
+  query, 
+  where, 
+  getDocs, 
+  updateDoc, 
+  doc 
+} from "firebase/firestore";
+
+import { useSearchParams } from "react-router-dom";
+
 
 export default function Complaint() {
   const [user, setUser] = useState(null);
+  const [searchParams] = useSearchParams();
+  const receiverID = searchParams.get("receiverID") || "";
+
   const [formData, setFormData] = useState({
-    upiId: "",
+    upiId: receiverID,
     complaint: "",
   });
+
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
@@ -17,13 +32,6 @@ export default function Complaint() {
       const currentUser = auth.currentUser;
       if (currentUser) {
         setUser(currentUser);
-
-        // Fetch UPI ID from Firestore if available
-        const userRef = doc(db, "users", currentUser.uid);
-        const userDoc = await getDoc(userRef);
-        if (userDoc.exists()) {
-          setFormData((prev) => ({ ...prev, upiId: userDoc.data().upiId || "" }));
-        }
       }
     };
 
@@ -32,34 +40,57 @@ export default function Complaint() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!user) {
-      setError("You must be logged in to submit a complaint.");
-      return;
-    }
-
+  
     const upiPattern = /^[\w.-]+@[\w.-]+$/;
     if (!upiPattern.test(formData.upiId)) {
       setError("Please enter a valid UPI ID (e.g., username@bankname)");
       return;
     }
-
+  
     if (formData.complaint.length < 10) {
       setError("Complaint must be at least 10 characters long.");
       return;
     }
-
+  
     try {
+      // Add complaint to Firestore
       await addDoc(collection(db, "complaints"), {
         senderEmail: user.email,
         recipientUpiId: formData.upiId,
         complaint: formData.complaint,
         timestamp: new Date(),
       });
-
+  
+      // Fetch recipient's user document
+      const usersRef = collection(db, "users");
+      const q = query(usersRef, where("upiId", "==", formData.upiId));
+      const querySnapshot = await getDocs(q);
+  
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0]; // Assuming UPI ID is unique
+        const userRef = doc(db, "users", userDoc.id);
+        const userData = userDoc.data();
+        const modelData = userData.modelData || {}; // Ensure modelData exists
+  
+        // Increment the required values by 0.2
+        const updatedModelData = {
+          ...modelData,
+          "Geo-Location Flags_normal": (modelData["Geo-Location Flags_normal"] || 0) - 0.02,
+          "Geo-Location Flags_unusual": (modelData["Geo-Location Flags_unusual"] || 0) - 0.02,
+          "Recent High-Value Transaction Flags": (modelData["Recent High-Value Transaction Flags"] || 0) + 0.02,
+          "Recipient Blacklist Status": (modelData["Recipient Blacklist Status"] || 0) + 0.02,
+          "Normalized Transaction Amount": (modelData["Normalized Transaction Amount"] || 0) - 0.01,
+          "Social Trust Score": (modelData["Social Trust Score"] || 0) - 0.1,
+          "Account Age": (modelData["Account Age"] || 0) +  0.1,
+        };
+  
+        // Update Firestore with new modelData values
+        await updateDoc(userRef, { modelData: updatedModelData });
+      }
+  
       setError("");
       setSubmitted(true);
-
+  
       setTimeout(() => {
         setSubmitted(false);
         setFormData({ upiId: formData.upiId, complaint: "" });
@@ -69,30 +100,32 @@ export default function Complaint() {
       setError("An error occurred while submitting your complaint. Please try again.");
     }
   };
+  
 
   return (
-    <div className="min-h-screen p-6 flex items-center justify-center bg-gray-900 text-white">
-      <div className="max-w-md mx-auto bg-gray-800 p-6 shadow-lg rounded-lg">
+    <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white px-4">
+      <div className="max-w-lg w-full bg-gray-900 p-8 rounded-2xl shadow-2xl border border-gray-800 relative">
         <div className="text-center mb-6">
-          <h2 className="text-3xl font-bold text-white">UPI Complaint Form</h2>
-          <p className="mt-2 text-gray-400">Report issues with UPI transactions</p>
+          <h2 className="text-4xl font-bold text-indigo-400">Submit a Complaint</h2>
+          <p className="mt-2 text-gray-400">Report UPI transaction issues</p>
         </div>
 
         {!user ? (
-          <div className="bg-red-50 p-4 rounded-md flex items-center gap-2">
-            <Lock className="h-5 w-5 text-red-400" />
-            <p className="text-red-700 text-sm">You must be logged in to submit a complaint.</p>
+          <div className="bg-red-500/20 p-4 rounded-md flex items-center gap-2 text-red-400">
+            <Lock className="h-6 w-6" />
+            <p className="text-sm">You must be logged in to submit a complaint.</p>
           </div>
         ) : submitted ? (
-          <div className="bg-green-50 p-4 rounded-md mb-6 text-center">
-            <p className="text-green-800 font-medium">Complaint submitted successfully!</p>
+          <div className="bg-green-500/20 p-4 rounded-md mb-6 flex items-center gap-2 text-green-400">
+            <CheckCircle className="h-6 w-6" />
+            <p className="text-sm">Complaint submitted successfully!</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 p-4 rounded-md flex items-center gap-2">
-                <AlertCircle className="h-5 w-5 text-red-400" />
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="bg-red-500/20 p-4 rounded-md flex items-center gap-2 text-red-400">
+                <AlertCircle className="h-6 w-6" />
+                <p className="text-sm">{error}</p>
               </div>
             )}
 
@@ -103,12 +136,12 @@ export default function Complaint() {
               <input
                 type="text"
                 id="upiId"
-                placeholder="example@bankname"
+                placeholder="Complaint Against"
                 value={formData.upiId}
                 onChange={(e) => setFormData({ ...formData, upiId: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-2 block w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 required
-                disabled={!user}
+                disabled={!user || !!receiverID}
               />
             </div>
 
@@ -122,7 +155,7 @@ export default function Complaint() {
                 placeholder="Describe your issue in detail..."
                 value={formData.complaint}
                 onChange={(e) => setFormData({ ...formData, complaint: e.target.value })}
-                className="mt-1 block w-full rounded-md border border-gray-600 bg-gray-700 px-3 py-2 text-white placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                className="mt-2 block w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 required
                 disabled={!user}
               />
@@ -130,7 +163,7 @@ export default function Complaint() {
 
             <button
               type="submit"
-              className="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors disabled:opacity-50"
+              className="w-full py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105 disabled:opacity-50"
               disabled={!user}
             >
               Submit Complaint

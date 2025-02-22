@@ -11,39 +11,61 @@ import SidebarContent from "./SidebarContent"
 import { db } from './firebase' // Import your Firebase configuration
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore'
 import { auth } from './firebase' // Import Firebase auth
+import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
+
+
 
 const RecentTransactions = () => {
   const [user, setUser] = useState(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [transactions, setTransactions] = useState([]) // State to hold transactions
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchUserData = async () => {
-      const currentUser = auth.currentUser // Get the current user
+      const currentUser = auth.currentUser;
       if (currentUser) {
-        const userRef = doc(db, "users", currentUser.uid) // Reference to the user's document
-        const userDoc = await getDoc(userRef) // Fetch the user document
+        const userRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-          setUser(userDoc.data()) // Set user data
+          setUser(prevUser => {
+            // Only update if the data is actually different to avoid re-renders
+            return JSON.stringify(prevUser) !== JSON.stringify(userDoc.data()) 
+              ? userDoc.data() 
+              : prevUser;
+          });
         } else {
-          console.error("User document does not exist")
+          console.error("User document does not exist");
         }
       } else {
-        console.log("No user is currently logged in")
+        console.log("No user is currently logged in");
       }
-    }
+    };
 
     const fetchTransactions = async () => {
       if (!user) return // Ensure user is defined
 
       const transactionsCollection = collection(db, "transactions")
-      const transactionsQuery = query(transactionsCollection, where("senderUPI", "==", user.upiId)) // Fetch transactions for the current user's UPI ID
-      const transactionSnapshot = await getDocs(transactionsQuery)
-      const transactionList = transactionSnapshot.docs.map(doc => ({
+      
+      // Queries for both sent and received transactions
+      const sentQuery = query(transactionsCollection, where("senderUPI", "==", user.upiId))
+      const receivedQuery = query(transactionsCollection, where("recipientUPI", "==", user.upiId))
+      
+      const [sentSnapshot, receivedSnapshot] = await Promise.all([getDocs(sentQuery), getDocs(receivedQuery)])
+      
+      const sentTransactions = sentSnapshot.docs.map(doc => ({
         id: doc.id,
+        type: "sent",
         ...doc.data()
       }))
-      setTransactions(transactionList)
+      
+      const receivedTransactions = receivedSnapshot.docs.map(doc => ({
+        id: doc.id,
+        type: "received",
+        ...doc.data()
+      }))
+      
+      setTransactions([...sentTransactions, ...receivedTransactions])
     }
 
     fetchUserData().then(fetchTransactions) // Fetch user data and then transactions
@@ -52,9 +74,12 @@ const RecentTransactions = () => {
   const filteredTransactions = transactions.filter(
     (transaction) =>
       transaction.recipientUPI.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      transaction.senderUPI.toLowerCase().includes(searchTerm.toLowerCase()) ||
       transaction.amount.toString().includes(searchTerm) ||
       transaction.remarks.toLowerCase().includes(searchTerm.toLowerCase())
   )
+
+  console.log(filteredTransactions , "hello");
 
   return (
     <div className="flex min-h-screen bg-gray-900 text-gray-100">
@@ -90,22 +115,23 @@ const RecentTransactions = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-4 ">
                 {filteredTransactions.map((transaction) => (
-                  <Card key={transaction.id} className="bg-gray-700 border-gray-600 hover:bg-gray-600 transition-colors duration-200">
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2 rounded-full ${transaction.type === 'incoming' ? 'bg-green-500' : 'bg-red-500'}`}>
-                          {transaction.type === 'incoming' ? <ArrowDownLeft className="h-5 w-5 text-white" /> : <ArrowUpRight className="h-5 w-5 text-white" />}
+                  <div key={transaction.id} className="rounded-lg   transition-colors duration-200 flex group" >
+                  <Card  className="bg-gray-700 border-gray-600 hover:bg-gray-600  transition-colors duration-200 flex justify-between w-full peer">
+                    <CardContent className="flex items-center justify-between p-4  w-full ">
+                      <div className="flex items-center space-x-4  ">
+                        <div className={`p-2 rounded-full ${transaction.type === 'received' ? 'bg-green-500' : 'bg-red-500'}`}>
+                          {transaction.type === 'received' ? <ArrowDownLeft className="h-5 w-5 text-white" /> : <ArrowUpRight className="h-5 w-5 text-white" />}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-100">{transaction.recipientUPI}</p>
+                          <p className="font-medium text-gray-100">{transaction.type === 'received' ? transaction.senderUPI : transaction.recipientUPI}</p>
                           <p className="text-sm text-gray-400">{new Date(transaction.createdAt.seconds * 1000).toLocaleDateString()}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className={`text-lg font-semibold ${transaction.type === 'incoming' ? 'text-green-400' : 'text-red-400'}`}>
-                          {transaction.type === 'incoming' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
+                        <p className={`text-lg font-semibold ${transaction.type === 'received' ? 'text-green-400' : 'text-red-400'}`}>
+                          {transaction.type === 'received' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
                         </p>
                         <Badge
                           variant={
@@ -120,8 +146,20 @@ const RecentTransactions = () => {
                           {transaction.status}
                         </Badge>
                       </div>
+                          
                     </CardContent>
                   </Card>
+
+                  {transaction.type !== 'received' && <Card  className="bg-blue-600 h-3/4 mt-4 ml-3 hover:bg-blue-800  hover:cursor-pointer hidden  content-center  justify-between peer-hover:block group-hover:block " 
+                  onClick={() => navigate(`/complaint?receiverID=${transaction.recipientUPI}`)}
+                  >
+
+                    <CardContent className="flex items-center justify-between p-4  w-1/5 ">
+                    <div className="di">Complaint</div>
+                    </CardContent>
+                    </Card>}
+                    
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -133,4 +171,3 @@ const RecentTransactions = () => {
 }
 
 export default RecentTransactions
-

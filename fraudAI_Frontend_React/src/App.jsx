@@ -12,6 +12,7 @@ import { UserProvider } from "./context/user/index.jsx";
 import SignIn from "./components/logic/SignIn";
 import Statement from './components/logic/statement';
 
+import ComplaintsHistory from './components/logic/complaintView';
 const RouteTitleUpdater = () => {
   const location = useLocation();
 
@@ -67,6 +68,7 @@ const App = () => {
             path="/complaint"
             element={<RouteGuard element={<Complaint />} />}
           />
+          <Route path="/help-support" element={<RouteGuard element={<ComplaintsHistory />} />} />
           <Route path="/auth" element={<RouteGuard element={<SignIn />} />} />
         </Routes>
       </Router>

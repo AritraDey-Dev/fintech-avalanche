@@ -24,8 +24,6 @@ export default function SidebarContent() {
     { icon: Send, label: "Send Money", path: "/send-money" },
     { icon: History, label: "Transactions", path: "/transactions" },
     { icon: FileText, label: "Statements", path: "/statements" },
-    { icon: Users, label: "Beneficiaries", path: "/beneficiaries" },
-    { icon: Settings, label: "Settings", path: "/settings" },
     { icon: Help, label: "Help & Support", path: "/help-support" },
     {icon: PackageX, label: "Complain", path: "/complaint"}
   ];
