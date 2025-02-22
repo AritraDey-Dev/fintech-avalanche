@@ -2,16 +2,16 @@ import React, { useState, useEffect } from "react";
 import { IndianRupee, Building2, Search, User } from "lucide-react";
 import { db, auth } from "./firebase"; // Ensure correct Firebase imports
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { useUser } from "@/context/user";
 
 const bankDetails = {
-  bankName: "First Secure Bank",
+  bankName: "NPCI",
   period: "March 1, 2024, to March 31, 2024",
-  website: "www.firstsecurebank.com",
+  website: "UPI.Ai",
 };
 
 function Statement() {
-  const [user, setUser] = useState(null);
-  const [upiId, setUpiId] = useState("");
+  const { user, setUser, upiId, setUpiId } = useUser();
   const [transactions, setTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -68,14 +68,16 @@ function Statement() {
     }
   }, [upiId]);
 
-  const filteredTransactions = transactions.filter((txn) =>
-    txn.remarks?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.recipientUPI?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    txn.senderUPI?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredTransactions = transactions.filter(
+    (txn) =>
+      txn.remarks?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      txn.recipientUPI?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      txn.senderUPI?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const latestBalance =
-    transactions.length > 0 && transactions[transactions.length - 1]?.balance !== undefined
+    transactions.length > 0 &&
+    transactions[transactions.length - 1]?.balance !== undefined
       ? transactions[transactions.length - 1].balance.toLocaleString("en-IN", {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -91,7 +93,9 @@ function Statement() {
             <div className="flex items-center">
               <Building2 className="w-8 h-8 text-blue-400 mr-3" />
               <div>
-                <h1 className="text-2xl font-bold text-white">{bankDetails.bankName}</h1>
+                <h1 className="text-2xl font-bold text-white">
+                  {bankDetails.bankName}
+                </h1>
                 <p className="text-sm text-gray-400">{bankDetails.website}</p>
               </div>
             </div>
@@ -118,7 +122,9 @@ function Statement() {
               <p className="text-sm text-gray-400">Current Balance</p>
               <div className="flex items-center mt-1">
                 <IndianRupee className="w-5 h-5 text-gray-300" />
-                <span className="text-3xl font-bold text-white">{latestBalance}</span>
+                <span className="text-3xl font-bold text-white">
+                  {latestBalance}
+                </span>
               </div>
             </div>
             <div className="relative">
@@ -136,38 +142,58 @@ function Statement() {
         {/* Transactions Table */}
         <div className="bg-gray-700 rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-600">
-            <h2 className="text-lg font-semibold text-white">Transaction History</h2>
+            <h2 className="text-lg font-semibold text-white">
+              Transaction History
+            </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-600 text-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Description</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">UPI ID</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Withdrawal</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Deposit</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Description
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    UPI ID
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                    Credit
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                    Deposit
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-gray-800 divide-y divide-gray-600">
                 {loading ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">Loading transactions...</td>
+                    <td colSpan="6" className="text-center py-4">
+                      Loading transactions...
+                    </td>
                   </tr>
                 ) : error ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4 text-red-500">{error}</td>
+                    <td colSpan="6" className="text-center py-4 text-red-500">
+                      {error}
+                    </td>
                   </tr>
                 ) : filteredTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan="6" className="text-center py-4">No transactions found.</td>
+                    <td colSpan="6" className="text-center py-4">
+                      No transactions found.
+                    </td>
                   </tr>
                 ) : (
                   filteredTransactions.map((transaction) => (
                     <tr key={transaction.id} className="hover:bg-gray-700">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                         {transaction.createdAt
-                          ? new Date(transaction.createdAt.seconds * 1000).toLocaleDateString("en-IN")
+                          ? new Date(
+                              transaction.createdAt.seconds * 1000
+                            ).toLocaleDateString("en-IN")
                           : "N/A"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
@@ -178,10 +204,13 @@ function Statement() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-red-500">
                         {transaction.senderUPI === upiId && transaction.amount
-                          ? `₹${Math.abs(transaction.amount).toLocaleString("en-IN", {
-                              minimumFractionDigits: 2,
-                              maximumFractionDigits: 2,
-                            })}`
+                          ? `₹${Math.abs(transaction.amount).toLocaleString(
+                              "en-IN",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}`
                           : "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-right text-green-500">
@@ -192,7 +221,6 @@ function Statement() {
                             })}`
                           : "-"}
                       </td>
-               
                     </tr>
                   ))
                 )}

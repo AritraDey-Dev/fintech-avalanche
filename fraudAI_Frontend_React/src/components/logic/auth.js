@@ -26,9 +26,6 @@ export const handleGoogleSignIn = async () => {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     if (user) {
-      // Set initial login timestamp
-      localStorage.setItem("loginTimestamp", new Date().getTime().toString());
-      
       const userRef = doc(db, "users", user.uid);
       const userDoc = await getDoc(userRef);
 

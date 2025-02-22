@@ -10,7 +10,7 @@ import Dashboard from "./components/logic/Dashboard";
 import Recent from "./components/logic/Recent";
 import { UserProvider } from "./context/user/index.jsx";
 import SignIn from "./components/logic/SignIn";
-import Statement from './components/logic/statement';
+import Statement from "./components/logic/statement";
 
 import ComplaintsHistory from './components/logic/complaintView';
 const RouteTitleUpdater = () => {
@@ -32,7 +32,7 @@ const RouteTitleUpdater = () => {
     document.title = title;
   }, [location]);
 
-  return null; // This component does not render anything
+  return null;
 };
 import RouteGuard from "./components/routeGuard";
 import Complaint from "./components/logic/complain";
@@ -42,7 +42,7 @@ const App = () => {
       <Router>
         <RouteTitleUpdater />
         <Routes>
-          <Route path="/" element={<RouteGuard element={<Homepage />} />} />
+          <Route path="/" element={<RouteGuard element={<Dashboard />} />} />
           <Route
             path="/dashboard"
             element={<RouteGuard element={<Dashboard />} />}
@@ -59,7 +59,6 @@ const App = () => {
             element={<RouteGuard element={<Statement />} />}
           />
           <Route path="/beneficiaries" element={<Homepage />} />
-          {/* <Route path="/settings" element={<PredictForm />} /> */}
           <Route
             path="/help-support"
             element={<RouteGuard element={<Homepage />} />}
@@ -73,7 +72,6 @@ const App = () => {
         </Routes>
       </Router>
     </UserProvider>
-
   );
 };
 
